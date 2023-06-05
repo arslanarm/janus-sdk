@@ -9,7 +9,8 @@ data class JanusEvent<T>(
     val sender: Long,
     val transaction: String,
     @SerialName("plugindata")
-    val pluginData: PluginData<T>
+    val pluginData: PluginData<T>,
+    val jsep: Jsep? = null
 ) {
     @Serializable
     data class PluginData<T>(

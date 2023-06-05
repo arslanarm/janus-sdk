@@ -15,6 +15,9 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
     val joinedEvent = pluginHandle.janus.events
         .filter { it.pluginData.data.jsonObject["videoroom"]?.jsonPrimitive?.content == "joined" }
         .map { Janus.json.decodeFromJsonElement<JoinedEvent>(it.pluginData.data) }
+    val answerEvent = pluginHandle.janus.events
+        .filter { it.jsep != null && it.jsep.type == "answer" }
+        .map { it.jsep!! }
 
     suspend fun createRoom(): Long {
         val response = pluginHandle.sendMessage(Request("create"))
@@ -44,7 +47,7 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
         )
     }
     suspend fun publish(record: Boolean = false, jsep: Jsep) {
-        pluginHandle.sendMessage(PublishRequest("publish", record), jsep)
+        pluginHandle.sendMessage(PublishRequest("publish", record), jsep).also { println(it.bodyAsText()) }
     }
     suspend fun unpublish() {
         pluginHandle.sendMessage(Request("unpublish"))

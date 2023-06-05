@@ -14,10 +14,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -43,6 +40,7 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
     }
     var sessionId by Delegates.notNull<Long>()
     val events = MutableSharedFlow<JanusEvent<JsonElement>>()
+    val trickleEvent = MutableSharedFlow<TrickleEvent>()
     val gpsFlow = MutableSharedFlow<GPS>()
     lateinit var getEventsJob: Job
     lateinit var gpsJob: Job
@@ -54,12 +52,21 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
         sessionId = response.body<JanusData<Id>>().data.id
         getEventsJob = scope.launch {
             while (true) {
-                getEvents()?.let { events.emitAll(it.asFlow()) }
+                val eventResponse = getEvents()
+                try {
+                    events.emit(eventResponse.body<JanusEvent<JsonElement>>())
+                } catch (e: JsonConvertException) {
+                    try {
+                        trickleEvent.emit(eventResponse.body<TrickleEvent>())
+                    } catch (e: JsonConvertException) {
+                        eventResponse.body<List<JanusKeepAlive>>()
+                    }
+                }
             }
         }
 
         gpsJob = scope.launch {
-            client.webSocket("http://212.192.9.218/uploader") {
+            client.webSocket("ws://212.192.9.218:1234/upload") {
                 val id = json.decodeFromString<Identifier>((incoming.receive() as Frame.Text).readText())
                 println(id)
                 gpsFlow.collectLatest {
@@ -68,14 +75,8 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
             }
         }
     }
-    suspend fun getEvents(): List<JanusEvent<JsonElement>>? {
-        val response = client.get("$baseUrl/$sessionId?maxev=5")
-        return try {
-            response.body<List<JanusEvent<JsonElement>>>()
-        } catch (e: JsonConvertException) {
-            response.body<List<JanusKeepAlive>>()
-            null
-        }
+    suspend fun getEvents(): HttpResponse {
+        return client.get("$baseUrl/$sessionId")
     }
     suspend fun destroy() {
         client.post("$baseUrl/$sessionId") {

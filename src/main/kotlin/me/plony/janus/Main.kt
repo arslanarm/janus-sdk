@@ -4,8 +4,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import me.plony.janus.models.Jsep
+import me.plony.janus.videoRoomModels.Candidate
 import me.plony.janus.videoRoomModels.JoinAs
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 suspend fun main(args: Array<String>) {
     val janus = Janus("http://212.192.9.218:8088/janus")
@@ -29,7 +31,8 @@ suspend fun main(args: Array<String>) {
     )) // оффер
 
     // WebRTC connection через ICE сервер должен начаться
-
+    plugin.pluginHandle.trickle(Candidate("0", 0, "1 1 udp 2015363327 212.192.9.218 41714 typ host"))
+    delay(10.seconds)
 //    delay(10.minutes)
     plugin.destroyRoom(roomId)
     janus.destroy()

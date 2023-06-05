@@ -23,3 +23,13 @@ data class JanusEvent<T>(
 data class JanusKeepAlive(
     val janus: String
 )
+
+@Serializable
+data class TrickleEvent(
+    val janus: String,
+    val transaction: String,
+    val candidate: Candidate
+) {
+    @Serializable
+    data class Candidate(val completed: Boolean)
+}

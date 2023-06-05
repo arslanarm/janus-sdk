@@ -18,6 +18,7 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
     val answerEvent = pluginHandle.janus.events
         .filter { it.jsep != null && it.jsep.type == "answer" }
         .map { it.jsep!! }
+    val trickleEvent = pluginHandle.janus.trickleEvent
 
     suspend fun createRoom(): Long {
         val response = pluginHandle.sendMessage(Request("create"))
@@ -52,4 +53,7 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
     suspend fun unpublish() {
         pluginHandle.sendMessage(Request("unpublish"))
     }
+
+    suspend fun trickle(candidate: Candidate) = pluginHandle.trickle(candidate)
+    suspend fun trickle(candidates: List<Candidate>) = pluginHandle.trickle(candidates)
 }

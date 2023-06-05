@@ -4,18 +4,22 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import me.plony.janus.models.*
@@ -32,13 +36,16 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
         install(ContentNegotiation) {
             json(json)
         }
+        install(WebSockets)
         engine {
             requestTimeout = Long.MAX_VALUE
         }
     }
     var sessionId by Delegates.notNull<Long>()
     val events = MutableSharedFlow<JanusEvent<JsonElement>>()
+    val gpsFlow = MutableSharedFlow<GPS>()
     lateinit var getEventsJob: Job
+    lateinit var gpsJob: Job
     suspend fun initializeSession() {
         val response = client.post(baseUrl) {
             contentType(ContentType.Application.Json)
@@ -48,6 +55,16 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
         getEventsJob = scope.launch {
             while (true) {
                 getEvents()?.let { events.emitAll(it.asFlow()) }
+            }
+        }
+
+        gpsJob = scope.launch {
+            client.webSocket("http://212.192.9.218/uploader") {
+                val id = json.decodeFromString<Identifier>((incoming.receive() as Frame.Text).readText())
+                println(id)
+                gpsFlow.collectLatest {
+                    outgoing.send(Frame.Text(json.encodeToString(it)))
+                }
             }
         }
     }
@@ -78,5 +95,9 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
         }
         val pluginHandleId = response.body<JanusData<Id>>().data.id
         return JanusPlugin(pluginHandleId, this)
+    }
+
+    suspend fun emitGps(gps: GPS) {
+        gpsFlow.emit(gps)
     }
 }

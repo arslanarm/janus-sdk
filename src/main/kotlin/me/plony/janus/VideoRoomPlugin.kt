@@ -23,6 +23,7 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
     suspend fun createRoom(): Long {
         val response = pluginHandle.sendMessage(Request(
             "create",
+            "h264",
             "42e01f"
         ))
         val room = response.body<JanusEvent<RoomResponse>>().pluginData.data

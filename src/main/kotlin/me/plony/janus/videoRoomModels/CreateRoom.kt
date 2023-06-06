@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Request(
     val request: String,
-    @SerialName("h265_profile")
+    @SerialName("h264_profile")
     val h264Profile: String? = null
 )

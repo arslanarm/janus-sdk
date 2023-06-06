@@ -21,7 +21,10 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
     val trickleEvent = pluginHandle.janus.trickleEvent
 
     suspend fun createRoom(): Long {
-        val response = pluginHandle.sendMessage(Request("create"))
+        val response = pluginHandle.sendMessage(Request(
+            "create",
+            "42e01f"
+        ))
         val room = response.body<JanusEvent<RoomResponse>>().pluginData.data
         return room.room
     }

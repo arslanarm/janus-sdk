@@ -47,8 +47,8 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
         )
         )
     }
-    suspend fun publish(record: Boolean = false, jsep: Jsep) {
-        pluginHandle.sendMessage(PublishRequest("publish", record), jsep).also { println(it.bodyAsText()) }
+    suspend fun publish(audiocodec: String? = null, videocodec: String? = null, record: Boolean = false, jsep: Jsep) {
+        pluginHandle.sendMessage(PublishRequest("publish", audiocodec, videocodec, record), jsep).also { println(it.bodyAsText()) }
     }
     suspend fun unpublish() {
         pluginHandle.sendMessage(Request("unpublish"))

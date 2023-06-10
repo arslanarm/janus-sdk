@@ -58,6 +58,12 @@ class VideoRoomPlugin(val pluginHandle: JanusPlugin) {
         pluginHandle.sendMessage(Request("unpublish"))
     }
 
+    suspend fun destroy(room: Long) {
+        pluginHandle.sendMessage(RoomRequest("destroy", room))
+    }
+
+    suspend fun list() = pluginHandle.sendMessage(Request("list")).body<JanusEvent<RoomList>>().pluginData.data.list
+
     suspend fun trickle(candidate: Candidate) = pluginHandle.trickle(candidate)
     suspend fun trickle(candidates: List<Candidate>) = pluginHandle.trickle(candidates)
 }

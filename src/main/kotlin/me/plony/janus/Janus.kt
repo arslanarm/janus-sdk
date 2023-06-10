@@ -59,7 +59,8 @@ class Janus(val baseUrl: String, val scope: CoroutineScope = CoroutineScope(Disp
                     try {
                         trickleEvent.emit(eventResponse.body<TrickleEvent>())
                     } catch (e: JsonConvertException) {
-                        eventResponse.body<List<JanusKeepAlive>>()
+                        eventResponse.body<JanusKeepAlive>()
+                            .also { println(it) }
                     }
                 }
             }
